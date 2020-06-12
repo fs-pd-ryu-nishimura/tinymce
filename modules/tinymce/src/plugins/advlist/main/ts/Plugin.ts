@@ -13,13 +13,11 @@ import Editor from 'tinymce/core/api/Editor';
 
 export default () => {
   PluginManager.add('advlist', (editor) => {
-    const hasPlugin = (editor: Editor, plugin: string) => {
-      return Tools.inArray(editor.getParam('plugins', '', 'string').split(/[ ,]/), plugin) !== -1;
-    };
+    const hasPlugin = (editor: Editor, plugin: string) => Tools.inArray(editor.getParam('plugins', '', 'string').split(/[ ,]/), plugin) !== -1;
 
     if (hasPlugin(editor, 'lists')) {
       Buttons.register(editor);
       Commands.register(editor);
     }
   });
-}
+};
