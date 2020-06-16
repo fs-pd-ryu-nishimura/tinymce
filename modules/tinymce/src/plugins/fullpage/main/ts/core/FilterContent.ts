@@ -14,11 +14,9 @@ import * as Protect from './Protect';
 
 const each = Tools.each;
 
-const low = function (s: string) {
-  return s.replace(/<\/?[A-Z]+/g, function (a: string) {
-    return a.toLowerCase();
-  });
-};
+const low = (s: string) =>
+  s.replace(/<\/?[A-Z]+/g, (a: string) =>
+    a.toLowerCase());
 
 const handleSetContent = function (editor: Editor, headState, footState, evt) {
   let startPos, endPos, content, styles = '';
