@@ -4,7 +4,7 @@ import { findPattern } from 'tinymce/plugins/textpattern/core/BlockPattern';
 
 UnitTest.test('atomic.tinymce.plugins.textpattern.FindBlockPatternsTest', function () {
   const mockEditor = {
-    getParam: () => ({})
+    getParam: (_term: string, default_pattern: any, _type: string) => (default_pattern)
   };
   const patternSet = getPatternSet(mockEditor as any);
   const defaultPatterns = patternSet.blockPatterns;
