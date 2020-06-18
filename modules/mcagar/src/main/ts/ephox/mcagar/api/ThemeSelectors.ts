@@ -1,5 +1,6 @@
 import { Global, Arr } from '@ephox/katamari';
 import { Editor } from '../alien/EditorTypes';
+import * as Settings from './Settings';
 
 const isSilver = () => {
   const tinymce = Global.tinymce;
@@ -26,7 +27,7 @@ const ModernThemeSelectors: ThemeSelectors = {
 };
 
 const SilverThemeSelectors: ThemeSelectors = {
-  toolBarSelector: (editor: Editor) => Arr.exists([ editor.settings.toolbar_mode, editor.settings.toolbar_drawer ], (s) => s === 'floating' || s === 'sliding') ? '.tox-toolbar-overlord' : '.tox-toolbar',
+  toolBarSelector: (editor: Editor) => Arr.exists([ Settings.getToolbarMode(editor), Settings.getToolbarDrawer(editor) ], (s) => s === 'floating' || s === 'sliding') ? '.tox-toolbar-overlord' : '.tox-toolbar',
   menuBarSelector: '.tox-menubar',
   dialogCloseSelector: '.tox-button:contains("Cancel")',
   dialogSubmitSelector: '.tox-button:contains("Save")'

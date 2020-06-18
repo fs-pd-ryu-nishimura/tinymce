@@ -20,9 +20,8 @@ import * as FontSizeSlider from '../ui/FontSizeSlider';
 import * as ImagePicker from '../ui/ImagePicker';
 import * as LinkButton from '../ui/LinkButton';
 import * as StyleFormats from '../util/StyleFormats';
+import * as Settings from '../api/Settings';
 import { MobileRealm } from '../ui/IosRealm';
-
-const defaults = [ 'undo', 'bold', 'italic', 'link', 'image', 'bullist', 'styleselect' ];
 
 const extract = function (rawToolbar) {
   // Ignoring groups
@@ -36,9 +35,9 @@ const identifyFromArray = function (toolbar) {
   });
 };
 
-const identify = function (settings) {
+const identify = (editor: Editor) => {
   // Firstly, flatten the toolbar
-  const toolbar = settings.toolbar !== undefined ? settings.toolbar : defaults;
+  const toolbar = Settings.getToolbar(editor);
   return Type.isArray(toolbar) ? identifyFromArray(toolbar) : extract(toolbar);
 };
 
@@ -95,7 +94,7 @@ const setup = function (realm: MobileRealm, editor: Editor) {
     return ColorSlider.sketch(realm, editor);
   };
 
-  const styleFormats = StyleFormats.register(editor, editor.settings);
+  const styleFormats = StyleFormats.register(editor);
 
   const styleFormatsMenu = function () {
     return StyleFormats.ui(editor, styleFormats, function () {
@@ -156,13 +155,13 @@ const setup = function (realm: MobileRealm, editor: Editor) {
   };
 };
 
-const detect = function (settings, features) {
+const detect = (editor: Editor, features) => {
   // Firstly, work out which items are in the toolbar
-  const itemNames = identify(settings);
+  const itemNames = identify(editor);
 
   // Now, build the list only including supported features and no duplicates.
   const present = { };
-  return Arr.bind(itemNames, function (iName) {
+  return Arr.bind(itemNames, (iName) => {
     const r = !Obj.hasNonNullableKey<any, string>(present, iName) && Obj.hasNonNullableKey(features, iName) && features[iName].isSupported() ? [ features[iName].sketch() ] : [];
     // NOTE: Could use fold to avoid mutation, but it might be overkill and not performant
     present[iName] = true;

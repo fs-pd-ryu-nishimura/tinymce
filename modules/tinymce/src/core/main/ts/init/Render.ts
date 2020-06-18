@@ -17,7 +17,6 @@ import IconManager from '../api/IconManager';
 import NotificationManager from '../api/NotificationManager';
 import PluginManager from '../api/PluginManager';
 import * as Settings from '../api/Settings';
-import { EditorSettings } from '../api/SettingsTypes';
 import ThemeManager from '../api/ThemeManager';
 import I18n from '../api/util/I18n';
 import Tools from '../api/util/Tools';
@@ -46,11 +45,11 @@ const loadLanguage = (scriptLoader, editor: Editor) => {
 };
 
 const loadTheme = function (scriptLoader: ScriptLoader, editor: Editor, suffix, callback) {
-  const settings = editor.settings, theme = settings.theme;
+  const theme = Settings.getTheme(editor);
 
   if (Type.isString(theme)) {
     if (!hasSkipLoadPrefix(theme) && !ThemeManager.urls.hasOwnProperty(theme)) {
-      const themeUrl = settings.theme_url;
+      const themeUrl = Settings.getThemeUrl(editor);
 
       if (themeUrl) {
         ThemeManager.load(theme, editor.documentBaseURI.toAbsolute(themeUrl));
@@ -97,19 +96,21 @@ const loadIcons = (scriptLoader: ScriptLoader, editor: Editor, suffix: string) =
   });
 };
 
-const loadPlugins = (editor: Editor, settings: EditorSettings, suffix: string) => {
-  if (Type.isArray(settings.plugins)) {
-    settings.plugins = settings.plugins.join(' ');
+const loadPlugins = (editor: Editor, suffix: string) => {
+  // These lines should be changed to a getParam and some type of setParam once such an API is available.
+  // First line not changed due to typing from Typescript not realizing that editor.settings.plugins can be an array unless so told.
+  if (Type.isArray(editor.settings.plugins)) {
+    editor.settings.plugins = editor.settings.plugins.join(' ');
   }
 
-  Tools.each(settings.external_plugins, function (url, name) {
+  Tools.each(editor.getParam('external_plugins'), (url: string, name: string): void => {
     PluginManager.load(name, url, Fun.noop, undefined, () => {
       ErrorReporter.pluginLoadError(editor, url, name);
     });
-    settings.plugins += ' ' + name;
+    editor.settings.plugins += ' ' + name;
   });
 
-  Tools.each(settings.plugins.split(/[ ,]/), function (plugin) {
+  Tools.each(editor.settings.plugins.split(/[ ,]/), (plugin) => {
     plugin = Tools.trim(plugin);
 
     if (plugin && !PluginManager.urls[plugin]) {
@@ -151,7 +152,7 @@ const loadScripts = function (editor: Editor, suffix: string) {
   loadTheme(scriptLoader, editor, suffix, function () {
     loadLanguage(scriptLoader, editor);
     loadIcons(scriptLoader, editor, suffix);
-    loadPlugins(editor, editor.settings, suffix);
+    loadPlugins(editor, suffix);
 
     scriptLoader.loadQueue(function () {
       if (!editor.removed) {
@@ -166,7 +167,7 @@ const loadScripts = function (editor: Editor, suffix: string) {
 };
 
 const render = function (editor: Editor) {
-  const settings = editor.settings, id = editor.id;
+  const id = editor.id;
 
   // The user might have bundled multiple language packs so we need to switch the active code to the user specified language
   I18n.setCode(Settings.getLanguageCode(editor));
@@ -193,7 +194,7 @@ const render = function (editor: Editor) {
   }
 
   // Hide target element early to prevent content flashing
-  if (!settings.inline) {
+  if (!Settings.isInline(editor)) {
     editor.orgVisibility = editor.getElement().style.visibility;
     editor.getElement().style.visibility = 'hidden';
   } else {
@@ -205,7 +206,7 @@ const render = function (editor: Editor) {
     editor.formElement = form;
 
     // Add hidden input for non input elements inside form elements
-    if (settings.hidden_input && !NodeType.isTextareaOrInput(editor.getElement())) {
+    if (Settings.hasHiddenInput(editor) && !NodeType.isTextareaOrInput(editor.getElement())) {
       DOM.insertAfter(DOM.create('input', { type: 'hidden', name: id }), id);
       editor.hasHiddenInput = true;
     }
@@ -223,7 +224,7 @@ const render = function (editor: Editor) {
     });
 
     // Check page uses id="submit" or name="submit" for it's submit button
-    if (settings.submit_patch && !form.submit.nodeType && !form.submit.length && !form._mceOldSubmit) {
+    if (Settings.shouldSubmitPatch(editor) && !form.submit.nodeType && !form.submit.length && !form._mceOldSubmit) {
       form._mceOldSubmit = form.submit;
       form.submit = function () {
         editor.editorManager.triggerSave();
@@ -237,7 +238,7 @@ const render = function (editor: Editor) {
   editor.windowManager = WindowManager(editor);
   editor.notificationManager = NotificationManager(editor);
 
-  if (settings.encoding === 'xml') {
+  if (Settings.isEncodingXml(editor)) {
     editor.on('GetContent', function (e) {
       if (e.save) {
         e.content = DOM.encode(e.content);
@@ -245,7 +246,7 @@ const render = function (editor: Editor) {
     });
   }
 
-  if (settings.add_form_submit_trigger) {
+  if (Settings.shouldAddFormSubmitTrigger(editor)) {
     editor.on('submit', function () {
       if (editor.initialized) {
         editor.save();
@@ -253,7 +254,7 @@ const render = function (editor: Editor) {
     });
   }
 
-  if (settings.add_unload_trigger) {
+  if (Settings.shouldAddUnloadTrigger(editor)) {
     editor._beforeUnload = function () {
       if (editor.initialized && !editor.destroyed && !editor.isHidden()) {
         editor.save({ format: 'raw', no_events: true, set_dirty: false });
